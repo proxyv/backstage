@@ -1,18 +1,12 @@
 app:
-  baseUrl: https://${APP_DOMAIN}
+  baseUrl: https://backstage-demo-xyz.a.run.app # You'll update this after first deploy
 
 backend:
-  baseUrl: https://${APP_DOMAIN}
+  baseUrl: https://backstage-demo-xyz.a.run.app
   listen:
     port: 7007
   database:
     client: better-sqlite3
-    connection: './data/backstage.sqlite' # Database file location
+    connection: './data/backstage.sqlite'
   cors:
-    origin: https://${APP_DOMAIN}
-
-# For a demo, pre-load some example components
-catalog:
-  locations:
-    - type: url
-      target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all-components.yaml
+    origin: https://backstage-demo-xyz.a.run.app
