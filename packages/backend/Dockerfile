@@ -55,7 +55,7 @@ COPY --chown=node:node packages/backend/dist/bundle.tar.gz app-config*.yaml ./
 RUN tar xzf bundle.tar.gz && rm bundle.tar.gz
 
 USER root
-RUN mkdir -p /app/data && chown node:node /app/data
+RUN mkdir -p data && chown node:node data
 USER node
 
 CMD ["node", "packages/backend", "--config", "app-config.yaml"]
