@@ -1,7 +1,7 @@
 name: Backstage Demo Deployment
 on:
   push:
-    branches: [ main ] # Or whichever branch you are using
+    branches: [ Feature01 ] # Or whichever branch you are using
 
 permissions:
   id-token: write
