@@ -1,7 +1,6 @@
 FROM node:22-bookworm-slim
 
 # 1. Install all system dependencies in one go
-# We include build-essential, g++, and make for native SQLite compilation
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
@@ -26,8 +25,7 @@ COPY --chown=node:node .yarnrc.yml ./
 COPY --chown=node:node yarn.lock package.json packages/backend/dist/skeleton.tar.gz ./
 RUN tar xzf skeleton.tar.gz && rm skeleton.tar.gz
 
-# 5.1 THE CRITICAL PERMISSION FIX
-# We refresh ownership of /app to ensure the node user can create node_modules
+# 5.1 THE PERMISSION REFRESH
 USER root
 RUN mkdir -p /home/node/.yarn/berry/index && \
     chown -R node:node /home/node && \
@@ -42,13 +40,12 @@ RUN --mount=type=cache,target=/home/node/.yarn/berry/cache,sharing=locked,uid=10
 COPY --chown=node:node packages/backend/dist/bundle.tar.gz app-config*.yaml ./
 RUN tar xzf bundle.tar.gz && rm bundle.tar.gz
 
-# 8. THE SQLITE FIX: Force native compilation for this specific OS
+# 8. THE SQLITE FIX: Using npm to bypass Yarn workspace validation
 USER root
-RUN yarn add better-sqlite3 && \
+RUN npm install better-sqlite3 && \
     mkdir -p data && \
     chown -R node:node /app
 USER node
 
 # 9. THE CORRECT START COMMAND
-# We use both config files; production overrides the base settings.
 CMD ["node", "packages/backend/dist/index.cjs.js", "--config", "app-config.yaml", "--config", "app-config.production.yaml"]
