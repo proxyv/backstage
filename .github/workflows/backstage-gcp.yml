@@ -31,7 +31,7 @@ jobs:
         run: |
           yarn install --no-immutable
           yarn tsc
-          yarn build:backend
+          yarn build:all
       # -------------------------------------------------------
 
       - name: Auth to GCP
