@@ -61,6 +61,7 @@ RUN tar xzf bundle.tar.gz && rm bundle.tar.gz
 
 USER root
 RUN mkdir -p data && chown node:node data
+RUN npm rebuild better-sqlite3
 USER node
 
 CMD ["node", "packages/backend", "--config", "app-config.yaml"]
