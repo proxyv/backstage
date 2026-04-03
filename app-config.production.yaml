@@ -1,12 +1,33 @@
 app:
-  baseUrl: https://backstage-demo-xyz.a.run.app # You'll update this after first deploy
+  # IMPORTANT: Update this URL after your first successful deployment
+  baseUrl: https://backstage-demo-xyz.a.run.app
 
 backend:
   baseUrl: https://backstage-demo-xyz.a.run.app
   listen:
-    port: 7007
+    port: 7007 # Backstage default; Cloud Run will map this via the Dockerfile
+  
   database:
     client: better-sqlite3
-    connection: './data/backstage.sqlite'
+    connection: './backstage.sqlite' # Saved in the container root since we are skipping the bucket
+
   cors:
     origin: https://backstage-demo-xyz.a.run.app
+    methods: [GET, POST, PUT, DELETE]
+    credentials: true
+
+  # This is required for Backstage to handle internal security
+  auth:
+    keys:
+      - secret: ${BACKEND_SECRET}
+
+# Expert Addition: Pre-load some demo data so the catalog isn't empty!
+catalog:
+  import:
+    entityFilename: catalog-info.yaml
+    recursive: true
+  locations:
+    - type: url
+      target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all-entities.yaml
+      rules:
+        - allow: [Component, System, API, Group, User, Resource, Location]
