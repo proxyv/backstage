@@ -64,4 +64,5 @@ jobs:
             --allow-unauthenticated \
             --memory 2Gi \
             --cpu 1 \
+            --port 7007 \
             --set-env-vars="BACKEND_SECRET=${{ secrets.BACKEND_SECRET }}"
