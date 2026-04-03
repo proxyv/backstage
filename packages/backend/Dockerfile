@@ -46,7 +46,12 @@ COPY --chown=node:node .yarnrc.yml ./
 # and along with yarn.lock and the root package.json, that's enough to run yarn install.
 COPY --chown=node:node yarn.lock package.json packages/backend/dist/skeleton.tar.gz ./
 RUN tar xzf skeleton.tar.gz && rm skeleton.tar.gz
+# We switch to root briefly to fix permissions
+USER root
+RUN mkdir -p /home/node/.yarn/berry/index && chown -R node:node /home/node
 
+# Now run the install as the node user
+USER node
 RUN --mount=type=cache,target=/home/node/.yarn/berry/cache,sharing=locked,uid=1000,gid=1000 \
     yarn workspaces focus --all --production
 
