@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,10 +40,16 @@ const searchLoader = createBackendFeatureLoader({
   },
 });
 
+// --- AUTH CONFIGURATION ---
 backend.add(import('@backstage/plugin-auth-backend'));
-backend.add(import('./authModuleGithubProvider'));
+// We use the Guest provider for the demo to avoid "Missing ClientID" errors.
 backend.add(import('@backstage/plugin-auth-backend-module-guest-provider'));
-backend.add(import('@backstage/plugin-auth-backend-module-openshift-provider'));
+
+// Commenting out providers that require external Secrets/Credentials for now:
+// backend.add(import('./authModuleGithubProvider'));
+// backend.add(import('@backstage/plugin-auth-backend-module-openshift-provider'));
+// ---------------------------
+
 backend.add(import('@backstage/plugin-app-backend'));
 backend.add(import('@backstage/plugin-catalog-backend-module-unprocessed'));
 backend.add(
@@ -75,4 +81,5 @@ backend.add(rootSystemMetadataServiceFactory);
 
 backend.add(import('@backstage/plugin-events-backend-module-google-pubsub'));
 backend.add(import('@backstage/plugin-mcp-actions-backend'));
+
 backend.start();
