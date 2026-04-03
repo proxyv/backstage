@@ -1,7 +1,7 @@
 name: Backstage Demo Deployment
 on:
   push:
-    branches: [ main ]
+    branches: [ Feature01 ]
 
 permissions:
   id-token: write
@@ -14,7 +14,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # --- NEW STEP: Install Node & Build the App ---
+      # --- STEP 1: COMPLIE THE APP (Mandatory for Backstage) ---
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -26,7 +26,7 @@ jobs:
           yarn install --immutable
           yarn tsc
           yarn build:backend
-      # ----------------------------------------------
+      # -------------------------------------------------------
 
       - name: Auth to GCP
         uses: google-github-actions/auth@v2
@@ -40,10 +40,10 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
+      # --- STEP 2: BUILD DOCKER WITH THE CORRECT PATH ---
       - name: Build and Push Image
         run: |
-          # We tell Docker the file is in packages/backend/Dockerfile
-          # but the context is the current root "."
+          # We use -f to point to the nested Dockerfile, but . to keep the root context
           docker build -f packages/backend/Dockerfile -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backstage-repo/backstage:latest .
           docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backstage-repo/backstage:latest
 
