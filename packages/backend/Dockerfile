@@ -1,67 +1,49 @@
-# This dockerfile builds an image for the backend package.
-# It should be executed with the root of the repo as docker context.
-#
-# Before building this image, be sure to have run the following commands in the repo root:
-#
-# yarn install
-# yarn tsc
-# yarn build:backend
-#
-# Once the commands have been run, you can build the image using `yarn build-image`
+FROM node:22-bookworm-slim
 
-FROM node:24-trixie-slim
-
-# Install sqlite3 dependencies. You can skip this if you don't use sqlite3 in the image,
-# in which case you should also move better-sqlite3 to "devDependencies" in package.json.
-# Additionally, we install dependencies for `techdocs.generator.runIn: local`.
-# https://backstage.io/docs/features/techdocs/getting-started#disabling-docker-in-docker-situation-optional
+# 1. Install all system dependencies in one go
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install -y --no-install-recommends libsqlite3-dev python3 python3-pip python3-venv build-essential && \
+    apt-get install -y --no-install-recommends \
+    libsqlite3-dev python3 python3-pip python3-venv build-essential g++ make && \
     yarn config set python /usr/bin/python3
 
-# Set up a virtual environment for mkdocs-techdocs-core.
+# 2. Set up Python Virtual Env for TechDocs
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-
 RUN pip3 install mkdocs-techdocs-core==1.1.7
 
-# From here on we use the least-privileged `node` user to run the backend.
+# 3. Prepare App Directory
 WORKDIR /app
 RUN chown node:node /app
-USER node
 
-
-# This switches many Node.js dependencies to production mode.
-ENV NODE_ENV=production
-
-# Copy over Yarn 3 configuration, release, and plugins
+# 4. Copy Yarn configuration
 COPY --chown=node:node .yarn ./.yarn
 COPY --chown=node:node .yarnrc.yml ./
 
-# Copy repo skeleton first, to avoid unnecessary docker cache invalidation.
-# The skeleton contains the package.json of each package in the monorepo,
-# and along with yarn.lock and the root package.json, that's enough to run yarn install.
+# 5. Copy Skeleton and fix Yarn Berry permissions
 COPY --chown=node:node yarn.lock package.json packages/backend/dist/skeleton.tar.gz ./
 RUN tar xzf skeleton.tar.gz && rm skeleton.tar.gz
-# We switch to root briefly to fix permissions
+
 USER root
 RUN mkdir -p /home/node/.yarn/berry/index && chown -R node:node /home/node
-
-# Now run the install as the node user
 USER node
+
+# 6. Install dependencies
 RUN --mount=type=cache,target=/home/node/.yarn/berry/cache,sharing=locked,uid=1000,gid=1000 \
     yarn workspaces focus --all --production
 
-# Then copy the rest of the backend bundle, along with any other files we might want.
+# 7. Copy Bundle and Configs
 COPY --chown=node:node packages/backend/dist/bundle.tar.gz app-config*.yaml ./
 RUN tar xzf bundle.tar.gz && rm bundle.tar.gz
 
+# 8. THE SQLITE FIX: Ensure the driver is built for this specific OS
 USER root
+RUN yarn add better-sqlite3
 RUN mkdir -p data && chown node:node data
-RUN npm rebuild better-sqlite3
 USER node
 
-CMD ["node", "packages/backend", "--config", "app-config.yaml"]
+# 9. THE CORRECT START COMMAND
+# We point to the specific .js file and load BOTH config files
+CMD ["node", "packages/backend/dist/index.cjs.js", "--config", "app-config.yaml", "--config", "app-config.production.yaml"]
