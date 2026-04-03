@@ -1,6 +1,7 @@
 FROM node:22-bookworm-slim
 
 # 1. Install all system dependencies in one go
+# build-essential, g++, and make are required to compile better-sqlite3
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
@@ -21,11 +22,10 @@ WORKDIR /app
 COPY --chown=node:node .yarn ./.yarn
 COPY --chown=node:node .yarnrc.yml ./
 
-# 5. Copy Skeleton
+# 5. Copy Skeleton and fix permissions
 COPY --chown=node:node yarn.lock package.json packages/backend/dist/skeleton.tar.gz ./
 RUN tar xzf skeleton.tar.gz && rm skeleton.tar.gz
 
-# 5.1 THE PERMISSION REFRESH
 USER root
 RUN mkdir -p /home/node/.yarn/berry/index && \
     chown -R node:node /home/node && \
@@ -40,12 +40,20 @@ RUN --mount=type=cache,target=/home/node/.yarn/berry/cache,sharing=locked,uid=10
 COPY --chown=node:node packages/backend/dist/bundle.tar.gz app-config*.yaml ./
 RUN tar xzf bundle.tar.gz && rm bundle.tar.gz
 
-# 8. THE SQLITE FIX: Using npm to bypass Yarn workspace validation
+# 8. THE "CLEAN ROOM" SQLITE BUILD
+# We build in /tmp so npm doesn't see the "workspace:" tags in your main package.json
 USER root
-RUN npm install better-sqlite3 && \
+RUN mkdir -p /tmp/sqlite-build && \
+    cd /tmp/sqlite-build && \
+    npm init -y && \
+    npm install better-sqlite3@11.10.0 && \
+    cp -R node_modules/* /app/node_modules/ && \
+    cd /app && \
+    rm -rf /tmp/sqlite-build && \
     mkdir -p data && \
     chown -R node:node /app
 USER node
 
 # 9. THE CORRECT START COMMAND
+# Ensuring both config files are loaded
 CMD ["node", "packages/backend/dist/index.cjs.js", "--config", "app-config.yaml", "--config", "app-config.production.yaml"]
