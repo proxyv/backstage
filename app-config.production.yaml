@@ -10,7 +10,7 @@ backend:
   
   database:
     client: better-sqlite3
-    connection: './backstage.sqlite'
+    connection: ':memory:'
 
   cors:
     # This prevents the "Cross-Origin" errors that stop the UI from loading
